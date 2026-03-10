@@ -28,22 +28,38 @@ const COMPANIONS = MOCK_NAMES.map((name, idx) => ({
   description: 'Viking inspired character with custom traits and personality setup.',
   likes: 12000 + idx * 130,
   creatorHandle: '@ramprakash',
-  // Put one image in /public, for example /public/companion.jpg
-  imageUrl: '/companion.jpg',
+  // Uses image from /public/companion.png
+  imageUrl: '/companion.png',
 }))
 
 export default function HomePage({ search, setPage, user }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [likedMap, setLikedMap] = useState({})
+  const [sortBy, setSortBy] = useState('likes_desc')
+  const [filterBy, setFilterBy] = useState('all')
 
-  const filtered = useMemo(() =>
-    COMPANIONS.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())), [search])
+  const filtered = useMemo(() => {
+    const searched = COMPANIONS.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+
+    const afterFilter = filterBy === 'liked'
+      ? searched.filter((c) => Boolean(likedMap[c._id]))
+      : searched
+
+    const sorted = [...afterFilter].sort((a, b) => {
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name)
+      if (sortBy === 'name_desc') return b.name.localeCompare(a.name)
+      if (sortBy === 'likes_asc') return a.likes - b.likes
+      return b.likes - a.likes
+    })
+
+    return sorted
+  }, [search, filterBy, sortBy, likedMap])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search])
+  }, [search, sortBy, filterBy])
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
@@ -84,6 +100,34 @@ export default function HomePage({ search, setPage, user }) {
             />
           )
         })}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 14, marginBottom: 6, flexWrap: 'wrap' }}>
+        <label style={{ color: '#aaa', fontSize: 13 }}>
+          Sort:
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{ marginLeft: 6, background: '#222', color: '#fff', border: '1px solid #444', borderRadius: 4, padding: '4px 6px' }}
+          >
+            <option value="likes_desc">Likes high to low</option>
+            <option value="likes_asc">Likes low to high</option>
+            <option value="name_asc">Name A to Z</option>
+            <option value="name_desc">Name Z to A</option>
+          </select>
+        </label>
+
+        <label style={{ color: '#aaa', fontSize: 13 }}>
+          Filter:
+          <select
+            value={filterBy}
+            onChange={(e) => setFilterBy(e.target.value)}
+            style={{ marginLeft: 6, background: '#222', color: '#fff', border: '1px solid #444', borderRadius: 4, padding: '4px 6px' }}
+          >
+            <option value="all">All</option>
+            <option value="liked">Liked only</option>
+          </select>
+        </label>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 18 }}>
